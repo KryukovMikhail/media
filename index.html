@@ -94,6 +94,7 @@ select{background:var(--bg2);border:1px solid var(--line);border-radius:12px;pad
 .det .poster{width:100%}
 .det h2{margin:0;font-size:26px}
 .det .orig{color:var(--muted);margin-top:4px}
+.olbl{display:inline-block;min-width:44px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;opacity:.7}
 .meta{color:var(--muted);font-size:14px;margin:12px 0;line-height:1.6}
 .meta b{color:var(--text);font-weight:500}
 .bigrates{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
@@ -170,7 +171,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 <script src="data/music.js"></script>
 <script>
 /* ======== НАСТРОЙКИ ======== */
-const BUILD = "M001.002";   // номер сборки: M<мажор>.<сборка>
+const BUILD = "M001.003";   // номер сборки: M<мажор>.<сборка>
 const SECTIONS = {
   movies:{ title:"Фильмы", varName:"MEDIA_MOVIES", file:"movies.js", wish:"посмотреть", unit:"фильмов и сериалов",
     tagGroups:[
@@ -236,7 +237,7 @@ function filtered(){
     if (st.tags.size && ![...st.tags].every(t => (x.tags||[]).includes(t))) return false;
     if (st.status!=="all" && (st.status==="wish") !== isWish(x,st.sec)) return false;
     if (!q) return true;
-    return [x.title,x.original,x.author,x.director,x.year,(x.tags||[]).join(" ")].join(" ").toLowerCase().includes(q);
+    return [x.title,x.titleEn,x.original,x.author,x.director,x.year,(x.tags||[]).join(" ")].join(" ").toLowerCase().includes(q);
   });
   const key = {
     added: x => x.added || "",
@@ -321,6 +322,12 @@ function card(x){
 }
 
 /* ======== КАРТОЧКА ======== */
+function titlesHTML(x){
+  const rows = [];
+  if (x.titleEn && x.titleEn!==x.title) rows.push(["EN", x.titleEn]);
+  if (x.original && x.original!==x.title && x.original!==x.titleEn) rows.push(["Ориг.", x.original]);
+  return rows.map(([k,v])=>`<div class="orig"><span class="olbl">${k}</span>${esc(v)}</div>`).join("");
+}
 function openDetail(id){
   const x = data[st.sec].find(i=>i.id===id); if(!x) return;
   const books = st.sec==="books", my = num(x.my);
@@ -336,7 +343,7 @@ function openDetail(id){
     <div class="det">
       <div class="poster">${posterHTML(x)}</div>
       <div>
-        <h2>${esc(x.title)}</h2>${x.original?`<div class="orig">${esc(x.original)}</div>`:""}
+        <h2>${esc(x.title)}</h2>${titlesHTML(x)}
         <div class="bigrates">
           <div class="br"><small>Моя оценка</small><b class="${cls(my)}">${my!=null?my+"/10":"—"}</b></div>${rates}
         </div>
@@ -351,7 +358,7 @@ function openDetail(id){
 
 /* ======== РЕДАКТОР ======== */
 const FIELDS = {
-  movies:[["title","Название *"],["original","Оригинальное название"],["year","Год"],["director","Режиссёр"],["country","Страна"],["done","Когда смотрел"],
+  movies:[["title","Название *"],["titleEn","Название на английском"],["original","Оригинальное название"],["year","Год"],["director","Режиссёр"],["country","Страна"],["done","Когда смотрел"],
           ["my","Моя оценка (0–10)"],["poster","Ссылка на постер"],["kpId","ID Кинопоиска","число из ссылки kinopoisk.ru/film/ID"],["kpRating","Рейтинг Кинопоиска"],
           ["imdbId","ID IMDb","tt… из ссылки imdb.com/title/tt…"],["imdbRating","Рейтинг IMDb"]],
   books:[["title","Название *"],["original","Оригинальное название"],["author","Автор"],["year","Год издания"],["done","Когда прочитал"],["my","Моя оценка (0–10)"],
@@ -389,7 +396,7 @@ function openForm(id){
       else if (val==="") delete rec[k]; else rec[k]=val;
     }
     if (!id) { rec.id = (rec.title.toLowerCase().replace(/[^a-zа-яё0-9]+/gi,"-").replace(/^-|-$/g,"") || "item") + "-" + Date.now().toString(36); rec.added = new Date().toISOString().slice(0,10); }
-    const order = ["id","title","original","year","author","director","country","tags","my","done","kpId","kpRating","imdbId","imdbRating","livelib","livelibRating","poster","description","review","added"];
+    const order = ["id","title","titleEn","original","year","author","director","country","tags","my","done","kpId","kpRating","imdbId","imdbRating","livelib","livelibRating","poster","description","review","added"];
     const clean = {}; order.forEach(k=>{ if(rec[k]!==undefined) clean[k]=rec[k] }); Object.keys(rec).forEach(k=>{ if(!(k in clean)) clean[k]=rec[k] });
     if (id) data[s] = data[s].map(i=>i.id===id?clean:i); else data[s].unshift(clean);
     saveDraft(s); closeModal(); render();
