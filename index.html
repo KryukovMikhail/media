@@ -14,7 +14,7 @@
   --r:14px;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+html,body{margin:0;color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:inherit}
 button,input,select,textarea{font:inherit;color:inherit}
 .wrap{max-width:1200px;margin:0 auto;padding:0 16px}
@@ -65,7 +65,9 @@ select{background:var(--bg2);border:1px solid var(--line);border-radius:12px;pad
 .card{cursor:pointer;border-radius:var(--r);transition:transform .15s}
 .card:hover{transform:translateY(-3px)}
 .poster{position:relative;aspect-ratio:2/3;border-radius:var(--r);overflow:hidden;background:var(--card)}
-.poster img{width:100%;height:100%;object-fit:cover;display:block}
+.poster img{position:absolute;inset:0;z-index:1;width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .4s}
+.poster img.ok{opacity:1}
+.poster .my{z-index:2}
 .ph{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:14px}
 .ph b{font-size:56px;font-weight:800;opacity:.35;line-height:1}
 .ph span{font-weight:700;font-size:15px;margin-top:6px}
@@ -117,6 +119,25 @@ form textarea{min-height:90px;resize:vertical}
 .hint{font-size:12px;color:var(--muted)}
 .factions{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 
+/* фон из постеров */
+.bgwall{position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none;background:var(--bg)}
+.bgwall .tilt{position:absolute;left:-20%;top:-30%;width:140%;height:160%;transform:rotate(-12deg);display:flex;flex-direction:column;gap:14px;opacity:.8}
+.bgwall .row{display:flex;gap:14px;width:max-content;animation:bgL var(--d,160s) linear infinite}
+.bgwall .row:nth-child(even){animation-name:bgR}
+.bgwall img{width:150px;height:225px;object-fit:cover;border-radius:12px;flex:none;background:var(--card)}
+@keyframes bgL{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes bgR{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+.bgwall::after{content:"";position:absolute;inset:0;background:
+  linear-gradient(180deg,rgba(14,15,19,.35) 0,rgba(14,15,19,.55) 260px,rgba(14,15,19,.86) 560px,rgba(14,15,19,.94) 900px),
+  radial-gradient(ellipse 120% 80% at 50% 0%,transparent 40%,rgba(14,15,19,.6))}
+@media (prefers-reduced-motion:reduce){.bgwall .row{animation:none}}
+body{background:transparent}
+html{background:var(--bg)}
+.hero h1{text-shadow:0 2px 24px rgba(0,0,0,.6)}
+.stat,.search,select,.chip,.btn.ghost{backdrop-filter:blur(6px)}
+.stat{background:rgba(22,24,31,.82)}
+.build{opacity:.6;margin-left:8px;font-variant-numeric:tabular-nums}
+
 footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;padding:20px 0 30px}
 
 @media (max-width:640px){
@@ -140,7 +161,8 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 </div></header>
 
 <main class="wrap" id="app"></main>
-<footer><div class="wrap">Михаил Крюков · личная медиатека</div></footer>
+<div class="bgwall" aria-hidden="true"><div class="tilt" id="bgTilt"></div></div>
+<footer><div class="wrap">Михаил Крюков · личная медиатека <span class="build" id="build"></span></div></footer>
 <div id="modal"></div>
 
 <script src="data/movies.js"></script>
@@ -148,6 +170,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 <script src="data/music.js"></script>
 <script>
 /* ======== НАСТРОЙКИ ======== */
+const BUILD = "M001.002";   // номер сборки: M<мажор>.<сборка>
 const SECTIONS = {
   movies:{ title:"Фильмы", varName:"MEDIA_MOVIES", file:"movies.js", wish:"посмотреть", unit:"фильмов и сериалов",
     tagGroups:[
@@ -196,7 +219,7 @@ function posterHTML(x){
   const h = hue(x.title||"?");
   const ph = `<div class="ph" style="background:linear-gradient(160deg,hsl(${h} 45% 28%),hsl(${(h+50)%360} 40% 12%))"><b>${esc((x.title||"?")[0])}</b><span>${esc(x.title)}</span></div>`;
   const src = x.poster || (x.kpId ? `https://st.kp.yandex.net/images/film_big/${enc(x.kpId)}.jpg` : "");
-  return src ? ph + `<img src="${esc(src)}" alt="" loading="lazy" onerror="this.remove()">` : ph;
+  return src ? ph + `<img src="${esc(src)}" alt="" loading="lazy" onload="this.classList.add('ok')" onerror="this.remove()">` : ph;
 }
 const isWish = (x,s) => (x.tags||[]).includes(SECTIONS[s].wish);
 
@@ -408,6 +431,26 @@ $("#editToggle").onclick = () => { st.edit=!st.edit; lsSet("media_edit", st.edit
 
 function route(){ const h=location.hash.slice(1); st.sec = SECTIONS[h]?h:"movies"; st.tags.clear(); st.q=""; st.status="all"; st.limit=PAGE; closeModal(); render(); window.scrollTo(0,0); }
 window.addEventListener("hashchange", route);
+
+/* ======== ФОН ИЗ ПОСТЕРОВ ======== */
+function buildWall(){
+  const all = (window.MEDIA_MOVIES||[]).filter(x=>x.poster);
+  let pool = all.filter(x=>(x.tags||[]).includes("любимые") || num(x.my)>=9);
+  if (pool.length < 60) pool = all;
+  pool = pool.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+  const ROWS = 7, PER = 14;
+  if (!pool.length) return;
+  let k = 0, html = "";
+  for (let r=0; r<ROWS; r++){
+    const imgs = [];
+    for (let i=0;i<PER;i++) imgs.push(pool[k++ % pool.length].poster);
+    const strip = imgs.map(s=>`<img src="${esc(s)}" alt="" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">`).join("");
+    html += `<div class="row" style="--d:${140+r*17}s">${strip}${strip}</div>`;
+  }
+  $("#bgTilt").innerHTML = html;
+}
+buildWall();
+$("#build").textContent = "· сборка " + BUILD;
 route();
 </script>
 </body>
