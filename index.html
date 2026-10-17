@@ -51,7 +51,7 @@ select{background:var(--bg2);border:1px solid var(--line);border-radius:12px;pad
 
 .tags{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
 .tagrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.tagrow small{color:var(--muted);width:64px;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.tagrow small{color:var(--muted);width:90px;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
 .chip{background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer;color:var(--muted)}
 .chip.on{background:var(--accent);border-color:var(--accent);color:#111;font-weight:600}
 .chip em{font-style:normal;opacity:.6;margin-left:4px}
@@ -78,6 +78,8 @@ select{background:var(--bg2);border:1px solid var(--line);border-radius:12px;pad
 .rate.kp{background:#232326}
 .rate.imdb{background:var(--imdb);color:#111}
 .g{color:var(--good)}.m{color:var(--mid)}.b{color:var(--bad)}
+.found{color:var(--muted);font-size:13px;margin:-8px 0 12px;min-height:4px}
+.more{text-align:center;margin:-30px 0 60px}
 .empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:60px 0}
 .soon{text-align:center;padding:80px 16px;color:var(--muted)}
 .soon h2{color:var(--text);font-size:28px}
@@ -149,10 +151,10 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 const SECTIONS = {
   movies:{ title:"Фильмы", varName:"MEDIA_MOVIES", file:"movies.js", wish:"посмотреть", unit:"фильмов и сериалов",
     tagGroups:[
-      ["Тип",    ["фильм","сериал","мини-сериал","анимация","документальный"]],
-      ["Жанр",   ["драма","комедия","фантастика","фэнтези","триллер","детектив","криминал","ужасы","боевик","приключения","история","биография","военный","спорт","мелодрама","мюзикл"]],
-      ["Списки", ["любимые","посмотреть","пересмотреть","с семьёй"]]
-    ]},
+      ["Тип",    ["фильм","сериал","мини-сериал","анимация","мультсериал","аниме","документальный","короткометражка"]],
+      ["Жанр",   ["драма","комедия","фантастика","фэнтези","триллер","детектив","криминал","ужасы","боевик","приключения","семейный","детский","история","биография","военный","спорт","мелодрама","мюзикл","музыка","вестерн","фильм-нуар","концерт","реальное ТВ","ток-шоу","игра","новости"]],
+      ["Статус", ["любимые","посмотреть","смотрю","пересмотреть"]]
+    ], otherLabel:"Мои списки"},
   books:{ title:"Книги", varName:"MEDIA_BOOKS", file:"books.js", wish:"прочитать", unit:"книг",
     tagGroups:[
       ["Тип",    ["роман","повесть","рассказы","нон-фикшн","биография","поэзия"]],
@@ -174,7 +176,8 @@ for (const s of ["movies","books"]) {
   drafts[s] = !!d;
   data[s] = d || (window[SECTIONS[s].varName] || []);
 }
-const st = { sec:"movies", q:"", tags:new Set(), sort:"added", edit: !!lsGet("media_edit") };
+const PAGE = 60;
+const st = { sec:"movies", q:"", tags:new Set(), sort:"added", status:"all", edit: !!lsGet("media_edit"), limit:PAGE };
 
 /* ======== УТИЛИТЫ ======== */
 const $ = s => document.querySelector(s);
@@ -208,6 +211,7 @@ function filtered(){
   const q = st.q.trim().toLowerCase();
   let r = list.filter(x => {
     if (st.tags.size && ![...st.tags].every(t => (x.tags||[]).includes(t))) return false;
+    if (st.status!=="all" && (st.status==="wish") !== isWish(x,st.sec)) return false;
     if (!q) return true;
     return [x.title,x.original,x.author,x.director,x.year,(x.tags||[]).join(" ")].join(" ").toLowerCase().includes(q);
   });
@@ -242,7 +246,7 @@ function render(){
   const known = new Set(S.tagGroups.flatMap(g=>g[1]));
   const groups = S.tagGroups.map(([g,ts]) => [g, ts.filter(t=>counts[t])]);
   const other = Object.keys(counts).filter(t=>!known.has(t)).sort((a,b)=>a.localeCompare(b,"ru"));
-  if (other.length) groups.push(["Другое", other]);
+  if (other.length) groups.push([S.otherLabel||"Другое", other]);
   const chip = t => `<button class="chip ${st.tags.has(t)?"on":""}" data-tag="${esc(t)}">${esc(t)}<em>${counts[t]}</em></button>`;
 
   const draftBanner = drafts[st.sec] ? `<div class="banner"><span>Есть изменения, сохранённые только в этом браузере. Выгрузи файл <b>${S.file}</b> и загрузи его в папку <b>data/</b> репозитория.</span>
@@ -262,6 +266,9 @@ function render(){
     ${draftBanner}
     <div class="toolbar">
       <input class="search" id="q" placeholder="Поиск по названию, ${st.sec==="books"?"автору":"режиссёру"}, тегам…" value="${esc(st.q)}">
+      <select id="status">
+        ${[["all","Все"],["done",st.sec==="books"?"Прочитанные":"Просмотренные"],["wish","В планах"]].map(([v,t])=>`<option value="${v}" ${st.status===v?"selected":""}>${t}</option>`).join("")}
+      </select>
       <select id="sort">
         ${[["added","Недавно добавленные"],["my","Моя оценка"],...(st.sec==="movies"?[["kp","Кинопоиск"],["imdb","IMDb"]]:[]),["year","Год"],["title","Название"]]
           .map(([v,t])=>`<option value="${v}" ${st.sort===v?"selected":""}>${t}</option>`).join("")}
@@ -272,7 +279,9 @@ function render(){
       ${groups.filter(g=>g[1].length).map(([g,ts])=>`<div class="tagrow"><small>${g}</small>${ts.map(chip).join("")}</div>`).join("")}
       ${st.tags.size?`<div><button class="clear" data-act="clear">Сбросить фильтры ×</button></div>`:""}
     </div>
-    <div class="grid">${items.length ? items.map(card).join("") : `<div class="empty">${list.length?"Ничего не найдено":"Список пока пуст"}</div>`}</div>`;
+    <div class="found">${items.length!==list.length?`Найдено: ${items.length}`:""}</div>
+    <div class="grid">${items.length ? items.slice(0,st.limit).map(card).join("") : `<div class="empty">${list.length?"Ничего не найдено":"Список пока пуст"}</div>`}</div>
+    ${items.length>st.limit?`<div class="more"><button class="btn ghost" data-act="more">Показать ещё (${items.length-st.limit})</button></div>`:""}`;
 }
 
 function card(x){
@@ -280,9 +289,10 @@ function card(x){
   const my = num(x.my);
   const badge = wish ? `<div class="my wish">${st.sec==="books"?"прочитать":"посмотреть"}</div>` : my!=null ? `<div class="my ${cls(my)}">★ ${my}</div>` : "";
   const sub = [x.year, st.sec==="books"?x.author:x.director].filter(Boolean).join(" · ");
-  const rates = st.sec==="movies" ? `<div class="rates">
-      <span class="rate kp ${cls(num(x.kpRating))}">КП ${fmt(num(x.kpRating))}</span>
-      <span class="rate imdb">IMDb ${fmt(num(x.imdbRating))}</span></div>` : "";
+  const kp = num(x.kpRating), im = num(x.imdbRating);
+  const rates = st.sec==="movies" && (kp!=null||im!=null) ? `<div class="rates">
+      ${kp!=null?`<span class="rate kp ${cls(kp)}">КП ${fmt(kp)}</span>`:""}
+      ${im!=null?`<span class="rate imdb">IMDb ${fmt(im)}</span>`:""}</div>` : "";
   return `<div class="card" data-id="${esc(x.id)}"><div class="poster">${posterHTML(x)}${badge}</div>
     <h3>${esc(x.title)}</h3><div class="sub">${esc(sub)}</div>${rates}</div>`;
 }
@@ -373,12 +383,13 @@ function closeModal(){ $("#modal").innerHTML=""; document.body.style.overflow=""
 
 document.addEventListener("click", e => {
   const ov = e.target.closest("[data-act]"), c = e.target.closest(".card"), tg = e.target.closest("[data-tag]");
-  if (tg) { const t=tg.dataset.tag; st.tags.has(t)?st.tags.delete(t):st.tags.add(t); render(); return; }
+  if (tg) { const t=tg.dataset.tag; st.tags.has(t)?st.tags.delete(t):st.tags.add(t); st.limit=PAGE; render(); return; }
   if (ov) {
     const a = ov.dataset.act, s = st.sec;
     if (a==="ovclose" && e.target!==ov) return;
     if (a==="close"||a==="ovclose") closeModal();
-    if (a==="clear") { st.tags.clear(); render(); }
+    if (a==="clear") { st.tags.clear(); st.limit=PAGE; render(); }
+    if (a==="more") { st.limit+=PAGE*2; const y=scrollY; render(); scrollTo(0,y); }
     if (a==="add") openForm(null);
     if (a==="edit") openForm(ov.dataset.id);
     if (a==="del" && confirm("Удалить запись?")) { data[s]=data[s].filter(i=>i.id!==ov.dataset.id); saveDraft(s); closeModal(); render(); }
@@ -389,12 +400,13 @@ document.addEventListener("click", e => {
   }
   if (c) openDetail(c.dataset.id);
 });
-document.addEventListener("input", e => { if (e.target.id==="q") { st.q=e.target.value; const p=e.target.selectionStart; render(); const q=$("#q"); q.focus(); q.setSelectionRange(p,p); } });
-document.addEventListener("change", e => { if (e.target.id==="sort") { st.sort=e.target.value; render(); } });
+document.addEventListener("input", e => { if (e.target.id==="q") { st.q=e.target.value; st.limit=PAGE; const p=e.target.selectionStart; render(); const q=$("#q"); q.focus(); q.setSelectionRange(p,p); } });
+document.addEventListener("change", e => { if (e.target.id==="sort") { st.sort=e.target.value; st.limit=PAGE; render(); }
+  if (e.target.id==="status") { st.status=e.target.value; st.limit=PAGE; render(); } });
 document.addEventListener("keydown", e => { if (e.key==="Escape") closeModal(); });
 $("#editToggle").onclick = () => { st.edit=!st.edit; lsSet("media_edit", st.edit||null); render(); };
 
-function route(){ const h=location.hash.slice(1); st.sec = SECTIONS[h]?h:"movies"; st.tags.clear(); st.q=""; closeModal(); render(); window.scrollTo(0,0); }
+function route(){ const h=location.hash.slice(1); st.sec = SECTIONS[h]?h:"movies"; st.tags.clear(); st.q=""; st.status="all"; st.limit=PAGE; closeModal(); render(); window.scrollTo(0,0); }
 window.addEventListener("hashchange", route);
 route();
 </script>
