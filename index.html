@@ -128,7 +128,7 @@ select{background:var(--bg2);border:1px solid var(--line);border-radius:12px;pad
 .season summary .cnt{margin-left:auto;color:var(--muted);font-weight:500;font-size:13px}
 .season summary .bar{height:4px;width:60px;background:var(--line);border-radius:2px;overflow:hidden}
 .season summary .bar i{display:block;height:100%;background:var(--good)}
-.ep{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line);font-size:14px}
+.ep{display:flex;flex-direction:row;align-items:center;gap:10px;color:var(--text);text-align:left;padding:8px 12px;border-top:1px solid var(--line);font-size:14px}
 .ep .en{color:var(--muted);min-width:32px;font-variant-numeric:tabular-nums}
 .ep .et{flex:1;min-width:0}
 .ep .ed{color:var(--muted);font-size:12px;white-space:nowrap}
@@ -211,7 +211,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 <script src="data/music.js"></script>
 <script>
 /* ======== НАСТРОЙКИ ======== */
-const BUILD = "M001.005";   // номер сборки: M<мажор>.<сборка>
+const BUILD = "M001.006";   // номер сборки: M<мажор>.<сборка>
 const SECTIONS = {
   movies:{ title:"Фильмы", varName:"MEDIA_MOVIES", file:"movies.js", wish:"посмотреть", unit:"фильмов и сериалов",
     tagGroups:[
@@ -600,6 +600,9 @@ buildWall();
 
 /* ======== УВЕДОМЛЕНИЕ ОБ ОБНОВЛЕНИИ ======== */
 const CHANGES = {
+  "M001.006": ["Списки эпизодов у 596 сериалов (почти 29 тысяч серий) — отмечай просмотренные",
+               "Ссылки на Википедию у 3755 фильмов",
+               "Ссылки на IMDb сверены по Викидате — исправлено 187 неверных"],
   "M001.005": ["Вкладки в карточке: описание, мой отзыв, цитаты, заметки",
                "Список эпизодов у сериалов с отметкой «просмотрено»",
                "Ссылка на Википедию; кнопки IMDb и Wiki — только если есть точная ссылка",
