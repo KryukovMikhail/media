@@ -94,6 +94,8 @@ select{background:var(--bg2);border:1px solid var(--line);border-radius:12px;pad
 .det .poster{width:100%}
 .det h2{margin:0;font-size:26px}
 .det .orig{color:var(--muted);margin-top:4px}
+.tagline{font-style:italic;color:var(--accent2);margin:6px 0 2px}
+.br .votes{display:block;font-style:normal;font-size:11px;color:var(--muted)}
 .olbl{display:inline-block;min-width:44px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;opacity:.7}
 .meta{color:var(--muted);font-size:14px;margin:12px 0;line-height:1.6}
 .meta b{color:var(--text);font-weight:500}
@@ -171,7 +173,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 <script src="data/music.js"></script>
 <script>
 /* ======== НАСТРОЙКИ ======== */
-const BUILD = "M001.003";   // номер сборки: M<мажор>.<сборка>
+const BUILD = "M001.004";   // номер сборки: M<мажор>.<сборка>
 const SECTIONS = {
   movies:{ title:"Фильмы", varName:"MEDIA_MOVIES", file:"movies.js", wish:"посмотреть", unit:"фильмов и сериалов",
     tagGroups:[
@@ -213,7 +215,7 @@ const fmt = v => v==null ? "—" : (+v).toFixed(1);
 function hue(str){ let h=0; for (const c of str) h=(h*31+c.charCodeAt(0))%360; return h; }
 
 function kpUrl(x){ return x.kpId ? `https://www.kinopoisk.ru/film/${enc(x.kpId)}/` : `https://www.kinopoisk.ru/index.php?kp_query=${enc((x.title||"")+" "+(x.year||""))}`; }
-function imdbUrl(x){ return x.imdbId ? `https://www.imdb.com/title/${enc(x.imdbId)}/` : `https://www.imdb.com/find/?q=${enc(x.original||x.title||"")}`; }
+function imdbUrl(x){ return x.imdbId ? `https://www.imdb.com/title/${enc(x.imdbId)}/` : `https://www.imdb.com/find/?q=${enc((x.titleEn||x.original||x.title||"")+(x.year?" "+x.year:""))}&s=tt`; }
 function llUrl(x){ return x.livelib || `https://www.livelib.ru/find/${enc((x.title||"")+" "+(x.author||""))}`; }
 
 function posterHTML(x){
@@ -322,25 +324,37 @@ function card(x){
 }
 
 /* ======== КАРТОЧКА ======== */
+const dur = m => m ? (m>=60 ? `${Math.floor(m/60)} ч ${m%60} мин` : `${m} мин`) : "";
+const votes = n => n>=1e6 ? (n/1e6).toFixed(1).replace(".0","")+" млн" : n>=1e3 ? Math.round(n/1e3)+" тыс" : String(n);
 function titlesHTML(x){
   const rows = [];
   if (x.titleEn && x.titleEn!==x.title) rows.push(["EN", x.titleEn]);
   if (x.original && x.original!==x.title && x.original!==x.titleEn) rows.push(["Ориг.", x.original]);
   return rows.map(([k,v])=>`<div class="orig"><span class="olbl">${k}</span>${esc(v)}</div>`).join("");
 }
-function openDetail(id){
+const descCache = {};
+function loadDesc(kpId){
+  const n = String(+kpId % 32).padStart(2,"0");
+  if (!descCache[n]) descCache[n] = fetch(`data/desc/${n}.json`).then(r=>r.ok?r.json():{}).catch(()=>({}));
+  return descCache[n].then(m=>m[kpId]);
+}
+function openDetail(id, skipLoad){
   const x = data[st.sec].find(i=>i.id===id); if(!x) return;
+  if (!skipLoad && st.sec==="movies" && x.kpId && x.description===undefined) {
+    loadDesc(x.kpId).then(d=>{ x.description = d ? d[0] : ""; if (d && d[1] && !x.tagline) x.tagline = d[1];
+      if (document.querySelector(`.det[data-id="${CSS.escape(id)}"]`)) openDetail(id, true); });
+  }
   const books = st.sec==="books", my = num(x.my);
   const meta = (books
     ? [["Автор",x.author],["Год",x.year],["Прочитано",x.done]]
-    : [["Режиссёр",x.director],["Страна",x.country],["Год",x.year],["Просмотрено",x.done]]
+    : [["Режиссёр",x.director],["Страна",x.country],["Год",x.year],["Длительность",dur(x.duration)],["Просмотрено",x.done]]
   ).filter(r=>r[1]).map(([k,v])=>`<b>${k}:</b> ${esc(v)}`).join("<br>");
   const rates = books
     ? `<a class="br" href="${esc(llUrl(x))}" target="_blank" rel="noopener"><small>LiveLib</small><b>${x.livelibRating?fmt(num(x.livelibRating)):"→"}</b></a>`
     : `<a class="br" href="${esc(kpUrl(x))}" target="_blank" rel="noopener"><small>Кинопоиск</small><b class="${cls(num(x.kpRating))}">${fmt(num(x.kpRating))}</b></a>
-       <a class="br" href="${esc(imdbUrl(x))}" target="_blank" rel="noopener"><small>IMDb</small><b style="color:var(--imdb)">${fmt(num(x.imdbRating))}</b></a>`;
+       <a class="br" href="${esc(imdbUrl(x))}" target="_blank" rel="noopener"><small>IMDb</small><b style="color:var(--imdb)">${fmt(num(x.imdbRating))}</b>${x.imdbVotes?`<em class="votes">${votes(x.imdbVotes)}</em>`:""}</a>`;
   showModal(`<button class="iconbtn mx" data-act="close">✕</button>
-    <div class="det">
+    <div class="det" data-id="${esc(x.id)}">
       <div class="poster">${posterHTML(x)}</div>
       <div>
         <h2>${esc(x.title)}</h2>${titlesHTML(x)}
@@ -349,6 +363,7 @@ function openDetail(id){
         </div>
         <div class="meta">${meta}</div>
         <div class="dtags">${(x.tags||[]).map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</div>
+        ${x.tagline?`<div class="tagline">«${esc(x.tagline)}»</div>`:""}
         ${x.description?`<div class="sec"><h4>Описание</h4><p>${esc(x.description)}</p></div>`:""}
         ${x.review?`<div class="sec"><h4>Мой отзыв</h4><p class="review">${esc(x.review)}</p></div>`:""}
         ${st.edit?`<div class="mactions"><button class="btn" data-act="edit" data-id="${esc(x.id)}">Редактировать</button><button class="btn danger" data-act="del" data-id="${esc(x.id)}">Удалить</button></div>`:""}
