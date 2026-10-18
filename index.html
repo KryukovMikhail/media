@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MEDIA — книги, фильмы, музыка</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="MEDIA">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -215,7 +218,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 <script src="data/music.js"></script>
 <script>
 /* ======== НАСТРОЙКИ ======== */
-const BUILD = "M001.007";   // номер сборки: M<мажор>.<сборка>
+const BUILD = "M001.008";   // номер сборки: M<мажор>.<сборка>
 const SECTIONS = {
   movies:{ title:"Фильмы", varName:"MEDIA_MOVIES", file:"movies.js", wish:"посмотреть", unit:"фильмов и сериалов",
     tagGroups:[
@@ -609,6 +612,7 @@ buildWall();
 
 /* ======== УВЕДОМЛЕНИЕ ОБ ОБНОВЛЕНИИ ======== */
 const CHANGES = {
+  "M001.008": ["Своя иконка сайта — для вкладки и для ярлыка на экране «Домой»"],
   "M001.007": ["Карандаш переехал из шапки в карточку: ✎ у эпизодов — отмечать серии, ✎ на вкладках — писать отзыв, цитаты и заметки",
                "✎ рядом с крестиком — полное редактирование карточки (там же «Удалить»)"],
   "M001.006": ["Списки эпизодов у 596 сериалов (почти 29 тысяч серий) — отмечай просмотренные",
