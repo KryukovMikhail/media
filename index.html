@@ -108,6 +108,40 @@ select{background:var(--bg2);border:1px solid var(--line);border-radius:12px;pad
 .review{border-left:3px solid var(--accent);padding-left:12px}
 .dtags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .mactions{display:flex;gap:8px;margin-top:20px}
+/* вкладки карточки */
+.tabs{display:flex;gap:4px;margin:20px 0 12px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:8px 12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.tab.on{color:var(--text);border-bottom-color:var(--accent)}
+.tab em{font-style:normal;opacity:.6;margin-left:4px;font-size:12px}
+.pane p{margin:0;line-height:1.6;white-space:pre-wrap}
+.pane .empty2{color:var(--muted);font-size:14px}
+.pane textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;color:var(--text);resize:vertical;font:inherit}
+.pane .row2{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.quote{position:relative;border-left:3px solid var(--accent2);background:rgba(255,177,92,.06);border-radius:0 10px 10px 0;padding:10px 36px 10px 14px;margin:0 0 10px;font-style:italic;line-height:1.55;white-space:pre-wrap}
+.quote .qdel{position:absolute;top:6px;right:6px;background:none;border:0;color:var(--muted);cursor:pointer;font-size:16px}
+/* эпизоды */
+.eps{margin-top:22px}
+.eps h4{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.season{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden}
+.season summary{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;font-weight:600;list-style:none}
+.season summary::-webkit-details-marker{display:none}
+.season summary .cnt{margin-left:auto;color:var(--muted);font-weight:500;font-size:13px}
+.season summary .bar{height:4px;width:60px;background:var(--line);border-radius:2px;overflow:hidden}
+.season summary .bar i{display:block;height:100%;background:var(--good)}
+.ep{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--line);font-size:14px}
+.ep .en{color:var(--muted);min-width:32px;font-variant-numeric:tabular-nums}
+.ep .et{flex:1;min-width:0}
+.ep .ed{color:var(--muted);font-size:12px;white-space:nowrap}
+.ep input,.season input{width:20px;height:20px;accent-color:var(--good);cursor:pointer;flex:none}
+.ep.seen .et{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(141,147,165,.5)}
+/* уведомление об обновлении */
+.upd{position:fixed;right:16px;bottom:16px;z-index:60;max-width:380px;background:var(--bg2);border:1px solid var(--accent);border-radius:16px;padding:16px 16px 14px;box-shadow:0 12px 40px rgba(0,0,0,.5);animation:updIn .35s ease}
+.upd h5{margin:0 0 6px;font-size:15px;display:flex;align-items:center;gap:8px}
+.upd h5 i{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.upd ul{margin:6px 0 12px;padding-left:18px;color:var(--muted);font-size:13px;line-height:1.5}
+.upd .row2{display:flex;gap:8px}
+@keyframes updIn{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+@media (max-width:640px){.upd{left:12px;right:12px;bottom:12px;max-width:none}}
 
 /* form */
 form{padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -149,7 +183,11 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
   nav a{padding:7px 10px;font-size:14px}
   .grid{grid-template-columns:repeat(2,1fr);gap:14px}
   .det{grid-template-columns:1fr;padding:18px}
-  .det .poster{max-width:200px}
+  .det .poster{width:min(280px,72vw);justify-self:center}
+  .det > div{min-width:0}
+  .bigrates{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}
+  .br{min-width:0;padding:8px 10px}
+  .det h2{font-size:23px}
   form{grid-template-columns:1fr;padding:18px}
   .tagrow small{width:100%}
 }
@@ -173,12 +211,12 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 <script src="data/music.js"></script>
 <script>
 /* ======== НАСТРОЙКИ ======== */
-const BUILD = "M001.004";   // номер сборки: M<мажор>.<сборка>
+const BUILD = "M001.005";   // номер сборки: M<мажор>.<сборка>
 const SECTIONS = {
   movies:{ title:"Фильмы", varName:"MEDIA_MOVIES", file:"movies.js", wish:"посмотреть", unit:"фильмов и сериалов",
     tagGroups:[
       ["Тип",    ["фильм","сериал","мини-сериал","анимация","мультсериал","аниме","документальный","короткометражка"]],
-      ["Жанр",   ["драма","комедия","фантастика","фэнтези","триллер","детектив","криминал","ужасы","боевик","приключения","семейный","детский","история","биография","военный","спорт","мелодрама","мюзикл","музыка","вестерн","фильм-нуар","концерт","реальное ТВ","ток-шоу","игра","новости"]],
+      ["Жанр",   ["драма","комедия","фантастика","фэнтези","триллер","детектив","криминал","ужасы","боевик","приключения","семейный","детский","история","биография","военный","спорт","мелодрама","мюзикл","музыка","вестерн","фильм-нуар","концерт","реальное ТВ","ток-шоу","игра"]],
       ["Статус", ["любимые","посмотреть","смотрю","пересмотреть"]]
     ], otherLabel:"Мои списки"},
   books:{ title:"Книги", varName:"MEDIA_BOOKS", file:"books.js", wish:"прочитать", unit:"книг",
@@ -216,6 +254,7 @@ function hue(str){ let h=0; for (const c of str) h=(h*31+c.charCodeAt(0))%360; r
 
 function kpUrl(x){ return x.kpId ? `https://www.kinopoisk.ru/film/${enc(x.kpId)}/` : `https://www.kinopoisk.ru/index.php?kp_query=${enc((x.title||"")+" "+(x.year||""))}`; }
 function imdbUrl(x){ return x.imdbId ? `https://www.imdb.com/title/${enc(x.imdbId)}/` : `https://www.imdb.com/find/?q=${enc((x.titleEn||x.original||x.title||"")+(x.year?" "+x.year:""))}&s=tt`; }
+function wikiUrl(x){ return x.wiki || ""; }
 function llUrl(x){ return x.livelib || `https://www.livelib.ru/find/${enc((x.title||"")+" "+(x.author||""))}`; }
 
 function posterHTML(x){
@@ -338,8 +377,75 @@ function loadDesc(kpId){
   if (!descCache[n]) descCache[n] = fetch(`data/desc/${n}.json`).then(r=>r.ok?r.json():{}).catch(()=>({}));
   return descCache[n].then(m=>m[kpId]);
 }
+/* --- вкладки: описание / отзыв / цитаты / заметки --- */
+const TABS = [["desc","Описание"],["review","Мой отзыв"],["quotes","Цитаты"],["notes","Заметки"]];
+st.tab = "desc";
+const isSeries = x => (x.tags||[]).some(t=>["сериал","мультсериал","мини-сериал"].includes(t));
+function tabsHTML(x){
+  const count = {review: x.review?1:0, quotes:(x.quotes||[]).length, notes: x.notes?1:0};
+  const head = TABS.map(([k,t])=>`<button class="tab ${st.tab===k?"on":""}" data-act="tab" data-tab="${k}">${t}${count[k]&&k==="quotes"?`<em>${count[k]}</em>`:""}</button>`).join("");
+  return `<div class="tabs">${head}</div><div class="pane">${paneHTML(x)}</div>`;
+}
+function paneHTML(x){
+  const id = esc(x.id);
+  if (st.tab==="desc") {
+    const d = x.description===undefined && st.sec==="movies" ? `<p class="empty2">Загружаю описание…</p>`
+            : x.description ? `<p>${esc(x.description)}</p>` : `<p class="empty2">Описания нет.</p>`;
+    return d + (st.sec==="movies" && isSeries(x) ? `<div class="eps" id="eps">${episodesHTML(x)}</div>` : "");
+  }
+  if (st.tab==="review" || st.tab==="notes") {
+    const f = st.tab, txt = x[f]||"", ph = f==="review" ? "Что думаешь о фильме…" : "Заметки: где смотрел, с кем, что запомнилось…";
+    if (st.edit) return `<textarea id="paneText" placeholder="${ph}">${esc(txt)}</textarea>
+      <div class="row2"><button class="btn" data-act="saveText" data-id="${id}" data-f="${f}">Сохранить</button></div>`;
+    return txt ? `<p class="${f==="review"?"review":""}">${esc(txt)}</p>` : `<p class="empty2">${f==="review"?"Отзыва пока нет.":"Заметок пока нет."} Включи ✎ в шапке, чтобы написать.</p>`;
+  }
+  if (st.tab==="quotes") {
+    const q = x.quotes||[];
+    const list = q.map((t,i)=>`<blockquote class="quote">${esc(t)}${st.edit?`<button class="qdel" title="Удалить" data-act="delQuote" data-id="${id}" data-i="${i}">×</button>`:""}</blockquote>`).join("");
+    const add = st.edit ? `<textarea id="paneText" placeholder="Новая цитата…" style="min-height:70px"></textarea>
+      <div class="row2"><button class="btn" data-act="addQuote" data-id="${id}">Добавить цитату</button></div>` : "";
+    return (list || (st.edit?"":`<p class="empty2">Цитат пока нет. Включи ✎ в шапке, чтобы добавить.</p>`)) + add;
+  }
+  return "";
+}
+function refreshPane(x){ const p=document.querySelector(".pane"); if(p){ p.outerHTML = `<div class="pane">${paneHTML(x)}</div>`; }
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on", b.dataset.tab===st.tab)); }
+
+/* --- эпизоды сериалов --- */
+const epCache = {};
+function loadEpisodes(kpId){
+  if (!epCache[kpId]) epCache[kpId] = fetch(`data/episodes/${kpId}.json`).then(r=>r.ok?r.json():null).catch(()=>null);
+  return epCache[kpId];
+}
+function episodesHTML(x){
+  if (x._eps===undefined) {
+    loadEpisodes(x.kpId).then(e=>{ x._eps = e||null; const box=document.getElementById("eps"); if(box && document.querySelector(`.det[data-id="${CSS.escape(x.id)}"]`)) box.innerHTML = episodesHTML(x); });
+    return `<h4>Эпизоды</h4><p class="empty2">Загружаю список эпизодов…</p>`;
+  }
+  if (!x._eps || !(x._eps.seasons||[]).length) return "";
+  const seen = x.seen || {};
+  const all = x._eps.seasons.reduce((a,s)=>a+s.eps.length,0), done = Object.values(seen).reduce((a,v)=>a+v.length,0);
+  const seasons = x._eps.seasons.map(s=>{
+    const sv = new Set(seen[s.n]||[]), c = s.eps.filter(e=>sv.has(e[0])).length, full = c===s.eps.length && c>0;
+    const rows = s.eps.map(([n,t,d])=>`<label class="ep ${sv.has(n)?"seen":""}"><span class="en">${n}</span><span class="et">${esc(t||"Эпизод "+n)}</span>${d?`<span class="ed">${esc(d)}</span>`:""}
+      <input type="checkbox" data-ep="${s.n}:${n}" data-id="${esc(x.id)}" ${sv.has(n)?"checked":""} ${st.edit?"":"disabled"}></label>`).join("");
+    const open = !full && (c>0 || s===x._eps.seasons[0]);
+    return `<details class="season" ${open?"open":""}><summary>Сезон ${s.n}<span class="cnt">${c}/${s.eps.length}</span><span class="bar"><i style="width:${Math.round(c/s.eps.length*100)}%"></i></span>
+      <input type="checkbox" title="Отметить весь сезон" data-season="${s.n}" data-id="${esc(x.id)}" ${full?"checked":""} ${st.edit?"":"disabled"}></summary>${rows}</details>`;
+  }).join("");
+  return `<h4>Эпизоды · просмотрено ${done} из ${all}${st.edit?"":" <span style='text-transform:none;letter-spacing:0'>(✎ — чтобы отмечать)</span>"}</h4>${seasons}`;
+}
+function toggleEpisode(x, season, ep, on){
+  const seen = x.seen = x.seen || {}; const set = new Set(seen[season]||[]);
+  on ? set.add(ep) : set.delete(ep);
+  if (set.size) seen[season] = [...set].sort((a,b)=>a-b); else delete seen[season];
+  if (!Object.keys(seen).length) delete x.seen;
+  saveDraft(st.sec);
+}
+
 function openDetail(id, skipLoad){
   const x = data[st.sec].find(i=>i.id===id); if(!x) return;
+  if (!skipLoad) st.tab = "desc";
   if (!skipLoad && st.sec==="movies" && x.kpId && x.description===undefined) {
     loadDesc(x.kpId).then(d=>{ x.description = d ? d[0] : ""; if (d && d[1] && !x.tagline) x.tagline = d[1];
       if (document.querySelector(`.det[data-id="${CSS.escape(id)}"]`)) openDetail(id, true); });
@@ -351,8 +457,10 @@ function openDetail(id, skipLoad){
   ).filter(r=>r[1]).map(([k,v])=>`<b>${k}:</b> ${esc(v)}`).join("<br>");
   const rates = books
     ? `<a class="br" href="${esc(llUrl(x))}" target="_blank" rel="noopener"><small>LiveLib</small><b>${x.livelibRating?fmt(num(x.livelibRating)):"→"}</b></a>`
-    : `<a class="br" href="${esc(kpUrl(x))}" target="_blank" rel="noopener"><small>Кинопоиск</small><b class="${cls(num(x.kpRating))}">${fmt(num(x.kpRating))}</b></a>
-       <a class="br" href="${esc(imdbUrl(x))}" target="_blank" rel="noopener"><small>IMDb</small><b style="color:var(--imdb)">${fmt(num(x.imdbRating))}</b>${x.imdbVotes?`<em class="votes">${votes(x.imdbVotes)}</em>`:""}</a>`;
+    : [ x.kpId ? `<a class="br" href="${esc(kpUrl(x))}" target="_blank" rel="noopener"><small>Кинопоиск</small><b class="${cls(num(x.kpRating))}">${fmt(num(x.kpRating))}</b></a>` : "",
+        x.imdbId ? `<a class="br" href="${esc(imdbUrl(x))}" target="_blank" rel="noopener"><small>IMDb</small><b style="color:var(--imdb)">${fmt(num(x.imdbRating))}</b>${x.imdbVotes?`<em class="votes">${votes(x.imdbVotes)}</em>`:""}</a>` : "",
+        x.wiki ? `<a class="br" href="${esc(wikiUrl(x))}" target="_blank" rel="noopener"><small>Wiki</small><b>W</b><em class="votes">${/\/\/en\./.test(x.wiki)?"англ.":"рус."}</em></a>` : ""
+      ].join("");
   showModal(`<button class="iconbtn mx" data-act="close">✕</button>
     <div class="det" data-id="${esc(x.id)}">
       <div class="poster">${posterHTML(x)}</div>
@@ -364,8 +472,7 @@ function openDetail(id, skipLoad){
         <div class="meta">${meta}</div>
         <div class="dtags">${(x.tags||[]).map(t=>`<span class="chip">${esc(t)}</span>`).join("")}</div>
         ${x.tagline?`<div class="tagline">«${esc(x.tagline)}»</div>`:""}
-        ${x.description?`<div class="sec"><h4>Описание</h4><p>${esc(x.description)}</p></div>`:""}
-        ${x.review?`<div class="sec"><h4>Мой отзыв</h4><p class="review">${esc(x.review)}</p></div>`:""}
+        ${tabsHTML(x)}
         ${st.edit?`<div class="mactions"><button class="btn" data-act="edit" data-id="${esc(x.id)}">Редактировать</button><button class="btn danger" data-act="del" data-id="${esc(x.id)}">Удалить</button></div>`:""}
       </div>
     </div>`);
@@ -390,6 +497,7 @@ function openForm(id){
       <div class="sugg">${allTags.map(t=>`<button type="button" class="chip" data-sugg="${esc(t)}">${esc(t)}</button>`).join("")}</div></label>
     <label class="full">Описание<textarea name="description">${esc(x.description||"")}</textarea></label>
     <label class="full">Мой отзыв<textarea name="review">${esc(x.review||"")}</textarea></label>
+    <label class="full">Заметки<textarea name="notes">${esc(x.notes||"")}</textarea></label>
     <div class="factions"><button class="btn" type="submit">Сохранить</button><button class="btn ghost" type="button" data-act="close">Отмена</button></div>
   </form>`);
   const tin = $("#tagsIn");
@@ -411,15 +519,15 @@ function openForm(id){
       else if (val==="") delete rec[k]; else rec[k]=val;
     }
     if (!id) { rec.id = (rec.title.toLowerCase().replace(/[^a-zа-яё0-9]+/gi,"-").replace(/^-|-$/g,"") || "item") + "-" + Date.now().toString(36); rec.added = new Date().toISOString().slice(0,10); }
-    const order = ["id","title","titleEn","original","year","author","director","country","tags","my","done","kpId","kpRating","imdbId","imdbRating","livelib","livelibRating","poster","description","review","added"];
+    const order = ["id","title","titleEn","original","year","author","director","country","tags","my","done","kpId","kpRating","imdbId","imdbRating","livelib","livelibRating","poster","description","review","quotes","notes","seen","added"];
     const clean = {}; order.forEach(k=>{ if(rec[k]!==undefined) clean[k]=rec[k] }); Object.keys(rec).forEach(k=>{ if(!(k in clean)) clean[k]=rec[k] });
     if (id) data[s] = data[s].map(i=>i.id===id?clean:i); else data[s].unshift(clean);
     saveDraft(s); closeModal(); render();
   };
 }
-function saveDraft(s){ drafts[s]=true; lsSet("media_draft_"+s, data[s]); }
+function saveDraft(s){ drafts[s]=true; try{ localStorage.setItem("media_draft_"+s, JSON.stringify(data[s],(k,v)=>k==="_eps"?undefined:v)); }catch(e){} }
 function fileText(s){
-  return `// ${SECTIONS[s].title} — данные для сайта MEDIA. Обновлено ${new Date().toISOString().slice(0,10)}\nwindow.${SECTIONS[s].varName} = ${JSON.stringify(data[s],null,2)};\n`;
+  return `// ${SECTIONS[s].title} — данные для сайта MEDIA. Обновлено ${new Date().toISOString().slice(0,10)}\nwindow.${SECTIONS[s].varName} = ${JSON.stringify(data[s],(k,v)=>k==="_eps"?undefined:v,2)};\n`;
 }
 
 /* ======== МОДАЛКА / СОБЫТИЯ ======== */
@@ -436,6 +544,15 @@ document.addEventListener("click", e => {
     if (a==="clear") { st.tags.clear(); st.limit=PAGE; render(); }
     if (a==="more") { st.limit+=PAGE*2; const y=scrollY; render(); scrollTo(0,y); }
     if (a==="add") openForm(null);
+    if (a==="tab") { st.tab = ov.dataset.tab; const x=data[s].find(i=>i.id===document.querySelector(".det")?.dataset.id); if(x) refreshPane(x); }
+    if (a==="saveText"||a==="addQuote"||a==="delQuote") {
+      const x = data[s].find(i=>i.id===ov.dataset.id); if (!x) return;
+      const v = ($("#paneText")?.value||"").trim();
+      if (a==="saveText") { const f=ov.dataset.f; if (v) x[f]=v; else delete x[f]; }
+      if (a==="addQuote") { if (!v) return; (x.quotes = x.quotes||[]).push(v); }
+      if (a==="delQuote") { x.quotes.splice(+ov.dataset.i,1); if(!x.quotes.length) delete x.quotes; }
+      saveDraft(s); openDetail(x.id, true); render(); return;
+    }
     if (a==="edit") openForm(ov.dataset.id);
     if (a==="del" && confirm("Удалить запись?")) { data[s]=data[s].filter(i=>i.id!==ov.dataset.id); saveDraft(s); closeModal(); render(); }
     if (a==="export") { const b=new Blob([fileText(s)],{type:"text/javascript"}); const l=document.createElement("a"); l.href=URL.createObjectURL(b); l.download=SECTIONS[s].file; l.click(); }
@@ -446,7 +563,15 @@ document.addEventListener("click", e => {
   if (c) openDetail(c.dataset.id);
 });
 document.addEventListener("input", e => { if (e.target.id==="q") { st.q=e.target.value; st.limit=PAGE; const p=e.target.selectionStart; render(); const q=$("#q"); q.focus(); q.setSelectionRange(p,p); } });
-document.addEventListener("change", e => { if (e.target.id==="sort") { st.sort=e.target.value; st.limit=PAGE; render(); }
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.dataset.ep || t.dataset.season) {
+    const x = data[st.sec].find(i=>i.id===t.dataset.id); if (!x || !x._eps) return;
+    if (t.dataset.ep) { const [s,n]=t.dataset.ep.split(":").map(Number); toggleEpisode(x,s,n,t.checked); }
+    else { const s=+t.dataset.season, se=x._eps.seasons.find(z=>z.n===s); se.eps.forEach(e=>toggleEpisode(x,s,e[0],t.checked)); }
+    document.getElementById("eps").innerHTML = episodesHTML(x); render(); return;
+  }
+  if (e.target.id==="sort") { st.sort=e.target.value; st.limit=PAGE; render(); }
   if (e.target.id==="status") { st.status=e.target.value; st.limit=PAGE; render(); } });
 document.addEventListener("keydown", e => { if (e.key==="Escape") closeModal(); });
 $("#editToggle").onclick = () => { st.edit=!st.edit; lsSet("media_edit", st.edit||null); render(); };
@@ -472,6 +597,39 @@ function buildWall(){
   $("#bgTilt").innerHTML = html;
 }
 buildWall();
+
+/* ======== УВЕДОМЛЕНИЕ ОБ ОБНОВЛЕНИИ ======== */
+const CHANGES = {
+  "M001.005": ["Вкладки в карточке: описание, мой отзыв, цитаты, заметки",
+               "Список эпизодов у сериалов с отметкой «просмотрено»",
+               "Ссылка на Википедию; кнопки IMDb и Wiki — только если есть точная ссылка",
+               "Крупный постер по центру в мобильной карточке",
+               "Почищены теги: убраны «новости» и годы"],
+  "M001.004": ["Рейтинги IMDb, английские названия и описания фильмов"]
+};
+function showUpdate(title, items, buttons){
+  document.querySelector(".upd")?.remove();
+  const d = document.createElement("div"); d.className="upd";
+  d.innerHTML = `<h5><i></i>${title}</h5>${items.length?`<ul>${items.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}<div class="row2">${buttons}</div>`;
+  document.body.appendChild(d); return d;
+}
+(function(){
+  const seen = lsGet("media_seen_build");
+  if (seen !== BUILD) {
+    const d = showUpdate(`Обновление ${BUILD}`, CHANGES[BUILD]||[], `<button class="btn" data-upd="ok">Понятно</button>`);
+    d.querySelector("[data-upd=ok]").onclick = () => { lsSet("media_seen_build", BUILD); d.remove(); };
+  }
+  // если сайт открыт долго — проверяем, не вышла ли новая сборка
+  const check = () => fetch("version.json?t="+Date.now()).then(r=>r.ok?r.json():null).then(v=>{
+    if (v && v.build && v.build!==BUILD && !document.querySelector(".upd")) {
+      const d = showUpdate(`Вышла новая версия ${v.build}`, v.changes||[], `<button class="btn" data-upd="reload">Обновить</button><button class="btn ghost" data-upd="later">Позже</button>`);
+      d.querySelector("[data-upd=reload]").onclick = () => location.reload();
+      d.querySelector("[data-upd=later]").onclick = () => d.remove();
+    }
+  }).catch(()=>{});
+  setInterval(check, 5*60*1000);
+  document.addEventListener("visibilitychange", ()=>{ if (!document.hidden) check(); });
+})();
 $("#build").textContent = "· сборка " + BUILD;
 route();
 </script>
