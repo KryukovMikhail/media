@@ -227,21 +227,28 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 <script src="data/music.js"></script>
 <script>
 /* ======== НАСТРОЙКИ ======== */
-const BUILD = "M001.011";   // номер сборки: M<мажор>.<сборка>
+const BUILD = "M001.012";   // номер сборки: M<мажор>.<сборка>
 const SECTIONS = {
   movies:{ title:"Фильмы", varName:"MEDIA_MOVIES", file:"movies.js", wish:"посмотреть", unit:"фильмов и сериалов",
+    doneWord:"просмотрено", doneFilter:"Просмотренные", who:"режиссёру",
     tagGroups:[
       ["Тип",    ["фильм","сериал","мини-сериал","анимация","мультсериал","аниме","документальный","короткометражка"]],
       ["Жанр",   ["драма","комедия","фантастика","фэнтези","триллер","детектив","криминал","ужасы","боевик","приключения","семейный","детский","история","биография","военный","спорт","мелодрама","мюзикл","музыка","вестерн","фильм-нуар","концерт","реальное ТВ","ток-шоу","игра"]],
       ["Статус", ["любимые","посмотреть","смотрю","пересмотреть"]]
     ], otherLabel:"Мои списки"},
   books:{ title:"Книги", varName:"MEDIA_BOOKS", file:"books.js", wish:"прочитать", unit:"книг",
+    doneWord:"прочитано", doneFilter:"Прочитанные", who:"автору", doneTag:["прочитано","прослушано"],
     tagGroups:[
-      ["Тип",    ["роман","повесть","рассказы","нон-фикшн","биография","поэзия"]],
-      ["Жанр",   ["классика","фантастика","фэнтези","детектив","история","психология","бизнес","саморазвитие","IT","спорт"]],
-      ["Списки", ["любимые","прочитать","перечитать"]]
-    ]},
-  music:{ title:"Музыка", soon:true }
+      ["Тип",    ["роман","повесть","рассказы","нон-фикшн","биография","поэзия","аудиокнига"]],
+      ["Жанр",   ["классика","фантастика","фэнтези","детектив","история","философия","психология","бизнес","саморазвитие","IT","системный анализ","про бег","про войну"]],
+      ["Статус", ["любимые","прочитано","прослушано","читаю","прочитать","перечитать"]]
+    ], otherLabel:"Мои списки"},
+  music:{ title:"Музыка", varName:"MEDIA_MUSIC", file:"music.js", wish:"послушать", unit:"записей",
+    doneWord:"в коллекции", doneFilter:"Послушанные", who:"исполнителю",
+    tagGroups:[
+      ["Тип",    ["альбом","DJ-микс","исполнитель","композитор","дирижёр","оперный артист","мелодия","опера"]],
+      ["Списки", ["любимые","лучшие альбомы","послушать"]]
+    ], otherLabel:"Другое"}
 };
 const ORDER = ["books","movies","music"];
 
@@ -251,7 +258,7 @@ function lsSet(k,v){ try{ v===null?localStorage.removeItem(k):localStorage.setIt
 
 const data = {};
 const drafts = {};
-for (const s of ["movies","books"]) {
+for (const s of ["movies","books","music"]) {
   const d = lsGet("media_draft_"+s);
   drafts[s] = !!d;
   data[s] = d || (window[SECTIONS[s].varName] || []);
@@ -280,6 +287,8 @@ function posterHTML(x){
   return src ? ph + `<img src="${esc(src)}" alt="" loading="lazy" onload="this.classList.add('ok')" onerror="this.remove()">` : ph;
 }
 const isWish = (x,s) => (x.tags||[]).includes(SECTIONS[s].wish);
+const isDone = (x,s) => { const S=SECTIONS[s]; if (isWish(x,s)) return false; if (!S.doneTag) return true;
+  return !!(x.done || num(x.my)!=null || (x.tags||[]).some(t=>S.doneTag.includes(t))); };
 
 /* ======== РЕНДЕР ======== */
 function renderNav(){
@@ -291,7 +300,8 @@ function filtered(){
   const q = st.q.trim().toLowerCase();
   let r = list.filter(x => {
     if (st.tags.size && ![...st.tags].every(t => (x.tags||[]).includes(t))) return false;
-    if (st.status!=="all" && (st.status==="wish") !== isWish(x,st.sec)) return false;
+    if (st.status==="wish" && !isWish(x,st.sec)) return false;
+    if (st.status==="done" && !isDone(x,st.sec)) return false;
     if (!q) return true;
     return [x.title,x.titleEn,x.original,x.author,x.director,x.year,(x.tags||[]).join(" ")].join(" ").toLowerCase().includes(q);
   });
@@ -315,7 +325,7 @@ function render(){
     return;
   }
   const list = data[st.sec];
-  const done = list.filter(x=>!isWish(x,st.sec));
+  const done = list.filter(x=>isDone(x,st.sec)), wishN = list.filter(x=>isWish(x,st.sec)).length;
   const rated = done.filter(x=>num(x.my)!=null);
   const avg = rated.length ? (rated.reduce((a,x)=>a+ +x.my,0)/rated.length).toFixed(1) : "—";
   const fav = list.filter(x=>(x.tags||[]).includes("любимые")).length;
@@ -337,17 +347,17 @@ function render(){
     <section class="hero">
       <h1>${S.title}</h1>
       <div class="stats">
-        <div class="stat"><b>${done.length}</b><span>${st.sec==="books"?"прочитано":"просмотрено"}</span></div>
-        <div class="stat"><b>${list.length-done.length}</b><span>в планах</span></div>
+        <div class="stat"><b>${done.length}</b><span>${S.doneWord}</span></div>
+        <div class="stat"><b>${wishN}</b><span>в планах</span></div>
         <div class="stat"><b>${fav}</b><span>любимых</span></div>
         <div class="stat"><b>${avg}</b><span>средняя оценка</span></div>
       </div>
     </section>
     ${draftBanner}
     <div class="toolbar">
-      <input class="search" id="q" placeholder="Поиск по названию, ${st.sec==="books"?"автору":"режиссёру"}, тегам…" value="${esc(st.q)}">
+      <input class="search" id="q" placeholder="Поиск по названию, ${S.who}, тегам…" value="${esc(st.q)}">
       <select id="status">
-        ${[["all","Все"],["done",st.sec==="books"?"Прочитанные":"Просмотренные"],["wish","В планах"]].map(([v,t])=>`<option value="${v}" ${st.status===v?"selected":""}>${t}</option>`).join("")}
+        ${[["all","Все"],["done",S.doneFilter],["wish","В планах"]].map(([v,t])=>`<option value="${v}" ${st.status===v?"selected":""}>${t}</option>`).join("")}
       </select>
       <select id="sort">
         ${[["added","Недавно добавленные"],["my","Моя оценка"],...(st.sec==="movies"?[["kp","Кинопоиск"],["imdb","IMDb"]]:[]),["year","Год"],["title","Название"]]
@@ -367,8 +377,8 @@ function render(){
 function card(x){
   const wish = isWish(x,st.sec);
   const my = num(x.my);
-  const badge = wish ? `<div class="my wish">${st.sec==="books"?"прочитать":"посмотреть"}</div>` : my!=null ? `<div class="my ${cls(my)}">★ ${my}</div>` : "";
-  const sub = [x.year, st.sec==="books"?x.author:x.director].filter(Boolean).join(" · ");
+  const badge = wish ? `<div class="my wish">${SECTIONS[st.sec].wish}</div>` : my!=null ? `<div class="my ${cls(my)}">★ ${my}</div>` : "";
+  const sub = [x.year, st.sec==="movies"?x.director:x.author].filter(Boolean).join(" · ");
   const kp = num(x.kpRating), im = num(x.imdbRating);
   const rates = st.sec==="movies" && (kp!=null||im!=null) ? `<div class="rates">
       ${kp!=null?`<span class="rate kp ${cls(kp)}">КП ${fmt(kp)}</span>`:""}
@@ -410,7 +420,7 @@ function paneHTML(x){
     return d + (st.sec==="movies" && isSeries(x) ? `<div class="eps" id="eps">${episodesHTML(x)}</div>` : "");
   }
   if (st.tab==="review" || st.tab==="notes") {
-    const f = st.tab, txt = x[f]||"", ph = f==="review" ? "Что думаешь о фильме…" : "Заметки: где смотрел, с кем, что запомнилось…";
+    const f = st.tab, txt = x[f]||"", ph = f==="review" ? "Что думаешь?…" : "Заметки: где, с кем, что запомнилось…";
     if (st.paneEdit) return `<textarea id="paneText" placeholder="${ph}">${esc(txt)}</textarea>
       <div class="row2"><button class="btn" data-act="saveText" data-id="${id}" data-f="${f}">Сохранить</button><button class="btn ghost" data-act="paneEdit">Отмена</button></div>`;
     return (txt ? `<p class="${f==="review"?"review":""}">${esc(txt)}</p>` : `<p class="empty2">${f==="review"?"Отзыва пока нет.":"Заметок пока нет."}</p>`)
@@ -479,13 +489,18 @@ function openDetail(id, skipLoad){
     loadDesc(x.kpId).then(d=>{ x.description = d ? d[0] : ""; if (d && d[1] && !x.tagline) x.tagline = d[1];
       if (document.querySelector(`.det[data-id="${CSS.escape(id)}"]`)) openDetail(id, true); });
   }
-  const books = st.sec==="books", my = num(x.my);
+  const books = st.sec==="books", music = st.sec==="music", my = num(x.my);
   const meta = (books
-    ? [["Автор",x.author],["Год",x.year],["Прочитано",x.done]]
+    ? [["Автор",x.author],["Год",x.year],["Прочитано",x.done],["Читал",(x.views||[]).map(ruDate).join(", ")]]
+    : music ? [["Исполнитель",x.author],["Год",x.year],["Жанр",x.genre]]
     : [["Режиссёр",x.director],["Страна",x.country],["Год",x.year],["Длительность",dur(x.duration)],["Возраст",x.age],["Рейтинг MPAA",x.mpaa],["Просмотрено",x.done],["Смотрел",(x.views||[]).map(ruDate).join(", ")]]
   ).filter(r=>r[1]).map(([k,v])=>`<b>${k}:</b> ${esc(v)}`).join("<br>");
   const rates = books
     ? `<a class="br" href="${esc(llUrl(x))}" target="_blank" rel="noopener"><small>LiveLib</small><b>${x.livelibRating?fmt(num(x.livelibRating)):"→"}</b></a>`
+      + (x.link ? `<a class="br" href="${esc(x.link)}" target="_blank" rel="noopener"><small>Магазин</small><b>→</b></a>` : "")
+    : music
+    ? `<a class="br" href="https://music.yandex.ru/search?text=${enc([x.author,x.title].filter(Boolean).join(" "))}" target="_blank" rel="noopener"><small>Яндекс Музыка</small><b>♪</b></a>`
+      + `<a class="br" href="https://music.apple.com/ru/search?term=${enc([x.author,x.title].filter(Boolean).join(" "))}" target="_blank" rel="noopener"><small>Apple Music</small><b></b></a>`
     : [ x.kpId ? `<a class="br" href="${esc(kpUrl(x))}" target="_blank" rel="noopener"><small>Кинопоиск</small><b class="${cls(num(x.kpRating))}">${fmt(num(x.kpRating))}</b></a>` : "",
         x.imdbId ? `<a class="br" href="${esc(imdbUrl(x))}" target="_blank" rel="noopener"><small>IMDb</small><b style="color:var(--imdb)">${fmt(num(x.imdbRating))}</b>${x.imdbVotes?`<em class="votes">${votes(x.imdbVotes)}</em>`:""}</a>` : "",
         x.wiki ? `<a class="br" href="${esc(wikiUrl(x))}" target="_blank" rel="noopener"><small>Wiki</small><b>W</b><em class="votes">${/\/\/en\./.test(x.wiki)?"англ.":"рус."}</em></a>` : ""
@@ -512,7 +527,8 @@ const FIELDS = {
           ["my","Моя оценка (0–10)"],["poster","Ссылка на постер"],["kpId","ID Кинопоиска","число из ссылки kinopoisk.ru/film/ID"],["kpRating","Рейтинг Кинопоиска"],
           ["imdbId","ID IMDb","tt… из ссылки imdb.com/title/tt…"],["imdbRating","Рейтинг IMDb"],["age","Возраст","например 12+"]],
   books:[["title","Название *"],["original","Оригинальное название"],["author","Автор"],["year","Год издания"],["done","Когда прочитал"],["my","Моя оценка (0–10)"],
-         ["poster","Ссылка на обложку"],["livelib","Ссылка на LiveLib"],["livelibRating","Рейтинг LiveLib"]]
+         ["poster","Ссылка на обложку"],["livelib","Ссылка на LiveLib"],["livelibRating","Рейтинг LiveLib"]],
+  music:[["title","Название *"],["author","Исполнитель / автор"],["year","Год"],["genre","Жанр"],["my","Моя оценка (0–10)"],["poster","Ссылка на обложку"]]
 };
 function openForm(id){
   const s = st.sec, x = id ? data[s].find(i=>i.id===id) : {tags:[]};
@@ -547,7 +563,7 @@ function openForm(id){
       else if (val==="") delete rec[k]; else rec[k]=val;
     }
     if (!id) { rec.id = (rec.title.toLowerCase().replace(/[^a-zа-яё0-9]+/gi,"-").replace(/^-|-$/g,"") || "item") + "-" + Date.now().toString(36); rec.added = new Date().toISOString().slice(0,10); }
-    const order = ["id","title","titleEn","original","year","author","director","country","tags","my","done","kpId","kpRating","imdbId","imdbRating","livelib","livelibRating","poster","description","review","quotes","notes","views","seen","seenAt","epFav","epNotes","added"];
+    const order = ["id","title","titleEn","original","year","author","genre","director","country","tags","my","done","kpId","kpRating","imdbId","imdbRating","livelib","livelibRating","poster","description","review","quotes","notes","views","seen","seenAt","epFav","epNotes","added"];
     const clean = {}; order.forEach(k=>{ if(rec[k]!==undefined) clean[k]=rec[k] }); Object.keys(rec).forEach(k=>{ if(!(k in clean)) clean[k]=rec[k] });
     if (id) data[s] = data[s].map(i=>i.id===id?clean:i); else data[s].unshift(clean);
     saveDraft(s); closeModal(); render();
@@ -638,6 +654,9 @@ buildWall();
 
 /* ======== УВЕДОМЛЕНИЕ ОБ ОБНОВЛЕНИИ ======== */
 const CHANGES = {
+  "M001.012": ["Раздел «Книги» заполнен из заметок: 211 книг — прочитанные, прослушанные, «читаю», планы, списки (фантастика, про бег, про войну, системный анализ, рекомендации Вовы), цитаты и выписанные слова",
+               "Открыт раздел «Музыка»: 312 записей — лучшие альбомы, DJ-миксы, любимые исполнители, композиторы, дирижёры, оперные артисты, оперы",
+               "Каноническая хронология «Звёздных войн» — в заметках ко всем фильмам и сериалам франшизы"],
   "M001.011": ["Импорт из заметок iCloud (папка Movies): ещё 498 цитат к 54 фильмам и сериалам",
                "Просмотры эпизодов с датами из таблиц: «Ван-Пис» (656 серий), «Южный парк», «Очень странные дела», «Рик и Морти», «Смешарики», «Последний танец», «Время приключений»",
                "Любимые серии ★: 161 у «Южного парка», 40 у «Ван-Пис» с описаниями; герои и арки «Ван-Пис» — во вкладке «Заметки»"],
