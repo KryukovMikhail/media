@@ -143,10 +143,14 @@ select{background:var(--bg2);border:1px solid var(--line);border-radius:12px;pad
 .ep .en{color:var(--muted);min-width:32px;font-variant-numeric:tabular-nums}
 .ep .et{flex:1;min-width:0}
 .ep .ed{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.ep .enote{display:block;color:var(--text);opacity:.82;font-size:12px;line-height:1.35;margin-top:3px;font-style:italic}
+.ep .star{color:#f5c518}
+.ep.fav .en{color:#f5c518}
 .ep .sd{color:var(--good);font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .ep .epdate{background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--text);padding:3px 6px;font-size:12px;color-scheme:dark;max-width:132px}
 .ep input,.season input{width:20px;height:20px;accent-color:var(--good);cursor:pointer;flex:none}
-.ep.seen .et{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(141,147,165,.5)}
+.ep.seen .et{color:var(--muted)}
+.ep.seen .tt{text-decoration:line-through;text-decoration-color:rgba(141,147,165,.5)}
 /* уведомление об обновлении */
 .upd{position:fixed;right:16px;bottom:16px;z-index:60;max-width:380px;background:var(--bg2);border:1px solid var(--accent);border-radius:16px;padding:16px 16px 14px;box-shadow:0 12px 40px rgba(0,0,0,.5);animation:updIn .35s ease}
 .upd h5{margin:0 0 6px;font-size:15px;display:flex;align-items:center;gap:8px}
@@ -223,7 +227,7 @@ footer{border-top:1px solid var(--line);color:var(--muted);font-size:13px;paddin
 <script src="data/music.js"></script>
 <script>
 /* ======== НАСТРОЙКИ ======== */
-const BUILD = "M001.009";   // номер сборки: M<мажор>.<сборка>
+const BUILD = "M001.010";   // номер сборки: M<мажор>.<сборка>
 const SECTIONS = {
   movies:{ title:"Фильмы", varName:"MEDIA_MOVIES", file:"movies.js", wish:"посмотреть", unit:"фильмов и сериалов",
     tagGroups:[
@@ -446,7 +450,8 @@ function episodesHTML(x){
       const when = on ? (st.epEdit
           ? `<input type="date" class="epdate" data-epd="${k}" data-id="${esc(x.id)}" value="${esc(sd||"")}" max="${today()}" onclick="event.stopPropagation()">`
           : sd ? `<span class="sd" title="Дата просмотра">✓ ${ruDate(sd)}</span>` : `<span class="sd">✓</span>`) : "";
-      return `<label class="ep ${on?"seen":""}"><span class="en">${n}</span><span class="et">${esc(t||"Эпизод "+n)}${d?`<span class="ed">выход: ${esc(d)}</span>`:""}</span>${when}
+      const fav = (x.epFav||[]).includes(k), note = (x.epNotes||{})[k];
+      return `<label class="ep ${on?"seen":""} ${fav?"fav":""}"><span class="en">${n}</span><span class="et">${fav?`<span class="star" title="Любимая серия">★</span> `:""}<span class="tt">${esc(t||"Эпизод "+n)}</span>${d?`<span class="ed">выход: ${esc(d)}</span>`:""}${note?`<span class="enote">${esc(note)}</span>`:""}</span>${when}
       <input type="checkbox" data-ep="${s.n}:${n}" data-id="${esc(x.id)}" ${on?"checked":""} ${st.epEdit?"":"disabled"}></label>`; }).join("");
     const open = !full && (c>0 || s===x._eps.seasons[0]);
     return `<details class="season" ${open?"open":""}><summary>Сезон ${s.n}<span class="cnt">${c}/${s.eps.length}</span><span class="bar"><i style="width:${Math.round(c/s.eps.length*100)}%"></i></span>
@@ -477,7 +482,7 @@ function openDetail(id, skipLoad){
   const books = st.sec==="books", my = num(x.my);
   const meta = (books
     ? [["Автор",x.author],["Год",x.year],["Прочитано",x.done]]
-    : [["Режиссёр",x.director],["Страна",x.country],["Год",x.year],["Длительность",dur(x.duration)],["Возраст",x.age],["Рейтинг MPAA",x.mpaa],["Просмотрено",x.done]]
+    : [["Режиссёр",x.director],["Страна",x.country],["Год",x.year],["Длительность",dur(x.duration)],["Возраст",x.age],["Рейтинг MPAA",x.mpaa],["Просмотрено",x.done],["Смотрел",(x.views||[]).map(ruDate).join(", ")]]
   ).filter(r=>r[1]).map(([k,v])=>`<b>${k}:</b> ${esc(v)}`).join("<br>");
   const rates = books
     ? `<a class="br" href="${esc(llUrl(x))}" target="_blank" rel="noopener"><small>LiveLib</small><b>${x.livelibRating?fmt(num(x.livelibRating)):"→"}</b></a>`
@@ -542,7 +547,7 @@ function openForm(id){
       else if (val==="") delete rec[k]; else rec[k]=val;
     }
     if (!id) { rec.id = (rec.title.toLowerCase().replace(/[^a-zа-яё0-9]+/gi,"-").replace(/^-|-$/g,"") || "item") + "-" + Date.now().toString(36); rec.added = new Date().toISOString().slice(0,10); }
-    const order = ["id","title","titleEn","original","year","author","director","country","tags","my","done","kpId","kpRating","imdbId","imdbRating","livelib","livelibRating","poster","description","review","quotes","notes","seen","seenAt","added"];
+    const order = ["id","title","titleEn","original","year","author","director","country","tags","my","done","kpId","kpRating","imdbId","imdbRating","livelib","livelibRating","poster","description","review","quotes","notes","views","seen","seenAt","epFav","epNotes","added"];
     const clean = {}; order.forEach(k=>{ if(rec[k]!==undefined) clean[k]=rec[k] }); Object.keys(rec).forEach(k=>{ if(!(k in clean)) clean[k]=rec[k] });
     if (id) data[s] = data[s].map(i=>i.id===id?clean:i); else data[s].unshift(clean);
     saveDraft(s); closeModal(); render();
@@ -633,6 +638,10 @@ buildWall();
 
 /* ======== УВЕДОМЛЕНИЕ ОБ ОБНОВЛЕНИИ ======== */
 const CHANGES = {
+  "M001.010": ["Импорт из заметок Notion: 469 цитат к 69 фильмам и сериалам — во вкладке «Цитаты»",
+               "904 просмотренных эпизода в 36 сериалах с датами из дневника",
+               "Даты просмотров у 248 фильмов — строка «Смотрел» в карточке",
+               "Любимые серии ★ у «Симпсонов» и «Рика и Морти», мои описания серий «Симпсонов» прямо в списке эпизодов"],
   "M001.009": ["У просмотренных эпизодов — дата просмотра: ставится сама, поменять можно в режиме ✎ Отмечать",
                "Возрастное ограничение в карточках фильмов"],
   "M001.008": ["Своя иконка сайта — для вкладки и для ярлыка на экране «Домой»"],
